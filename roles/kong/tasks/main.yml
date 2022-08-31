@@ -1,0 +1,37 @@
+- name: Kong | Check if package is installed (debian)
+  command: dpkg-query -W kong
+  register: kong_check_deb
+  failed_when: kong_check_deb.rc > 1
+  changed_when: kong_check_deb.rc == 1
+
+
+- name: Download kong using get_url
+  get_url:
+    url: https://download.konghq.com/gateway-2.x-ubuntu-focal/pool/all/k/kong/kong_2.5.0_amd64.deb
+    dest: /tmp/kong_2.5.0_amd64.deb
+    mode: 0755
+  when: kong_check_deb.rc == 1
+
+- name: kong install package
+  shell: dpkg -i /tmp/kong_2.5.0_amd64.deb
+  when: kong_check_deb.rc == 1
+
+
+- name: Create kong systemd file startup
+  template:
+    dest: /usr/lib/systemd/system/kong.service
+    mode: 0750
+    src: kong.service.j2
+
+- name: Create kong.yml
+  template:
+    dest: /root/kong.yml
+    mode: 0750
+    src: kong.yml.j2
+
+
+- name: Create komg start script
+  template:
+    dest: /root/kong_start.sh
+    mode: 0775
+    src: kong_start.sh.j2
